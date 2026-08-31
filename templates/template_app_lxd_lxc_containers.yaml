@@ -1,0 +1,130 @@
+zabbix_export:
+  version: '6.4'
+  template_groups:
+    - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+    - uuid: 8d2000ea22854283878ed644507248b0
+      name: Templates/Virtualization
+  templates:
+    - uuid: d9b7f5e1a2c34e89b0d1e2f3a4b5c6d7
+      template: 'Template App LXD LXC Containers by Zabbix agent 2'
+      name: 'Template App LXD LXC Containers by Zabbix agent 2'
+      description: |
+        Automated Low-Level Discovery (LLD) and performance monitoring for LXD / LXC containers via Zabbix Agent / Agent 2.
+        
+        Monitored Metrics per Container:
+        - Container Lifecycle State (Running, Stopped, Frozen)
+        - Global IPv4 Network Address
+        - Memory Usage, Peak, and Swap
+        - Network Inbound / Outbound Bandwidth (Bytes per second)
+        
+        Triggers:
+        - Alert when a container is not in 'Running' state.
+      groups:
+        - name: Templates/Applications
+        - name: Templates/Virtualization
+      discovery_rules:
+        - uuid: e8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3
+          name: 'LXC Container Discovery'
+          key: lxd.discovery
+          delay: 1m
+          description: 'Discovers all registered LXD / LXC containers on the host node.'
+          item_prototypes:
+            - uuid: f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6
+              name: 'LXC: Container [{#LXC.NAME}] State'
+              key: 'lxd.container.status[{#LXC.NAME}]'
+              delay: 1m
+              history: 7d
+              trends: '0'
+              value_type: CHAR
+              description: 'Current operational state of container {#LXC.NAME} (Running, Stopped, Frozen).'
+              tags:
+                - tag: component
+                  value: lxc
+                - tag: container
+                  value: '{#LXC.NAME}'
+              trigger_prototypes:
+                - uuid: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+                  expression: 'last(/Template App LXD LXC Containers by Zabbix agent 2/lxd.container.status[{#LXC.NAME}])<>"Running"'
+                  name: 'LXC: Container [{#LXC.NAME}] is not in Running state (State: {ITEM.VALUE})'
+                  priority: AVERAGE
+                  description: 'The LXC container {#LXC.NAME} is not currently running.'
+                  tags:
+                    - tag: component
+                      value: lxc
+                    - tag: container
+                      value: '{#LXC.NAME}'
+
+            - uuid: f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7
+              name: 'LXC: Container [{#LXC.NAME}] IPv4 Address'
+              key: 'lxd.container.ipv4[{#LXC.NAME},eth0]'
+              delay: 5m
+              history: 7d
+              trends: '0'
+              value_type: CHAR
+              description: 'Primary global IPv4 address assigned to container {#LXC.NAME}.'
+              tags:
+                - tag: component
+                  value: lxc
+                - tag: container
+                  value: '{#LXC.NAME}'
+
+            - uuid: f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8
+              name: 'LXC: Container [{#LXC.NAME}] Memory Usage'
+              key: 'lxd.container.memory.usage[{#LXC.NAME}]'
+              delay: 1m
+              history: 7d
+              units: B
+              description: 'Current memory consumed by container {#LXC.NAME}.'
+              tags:
+                - tag: component
+                  value: lxc
+                - tag: container
+                  value: '{#LXC.NAME}'
+
+            - uuid: f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9
+              name: 'LXC: Container [{#LXC.NAME}] Memory Peak'
+              key: 'lxd.container.memory.peak[{#LXC.NAME}]'
+              delay: 5m
+              history: 7d
+              units: B
+              description: 'Peak memory recorded for container {#LXC.NAME}.'
+              tags:
+                - tag: component
+                  value: lxc
+                - tag: container
+                  value: '{#LXC.NAME}'
+
+            - uuid: f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0
+              name: 'LXC: Container [{#LXC.NAME}] Network eth0: Received Bytes'
+              key: 'lxd.container.net.rx[{#LXC.NAME},eth0]'
+              delay: 1m
+              history: 7d
+              units: Bps
+              description: 'Incoming network traffic bandwidth for container {#LXC.NAME} on eth0.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+              tags:
+                - tag: component
+                  value: lxc
+                - tag: container
+                  value: '{#LXC.NAME}'
+
+            - uuid: f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1
+              name: 'LXC: Container [{#LXC.NAME}] Network eth0: Transmitted Bytes'
+              key: 'lxd.container.net.tx[{#LXC.NAME},eth0]'
+              delay: 1m
+              history: 7d
+              units: Bps
+              description: 'Outgoing network traffic bandwidth for container {#LXC.NAME} on eth0.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                  parameters:
+                    - ''
+              tags:
+                - tag: component
+                  value: lxc
+                - tag: container
+                  value: '{#LXC.NAME}'
