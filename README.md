@@ -44,9 +44,9 @@ This solution provides:
 |                     +---> LXD REST API (/1.0/instances)                 |
 |                                                                         |
 |  [ LXC Containers ]                                                     |
-|    - container-01 (Running | 41.86.234.2 | Memory | Network I/O)        |
-|    - container-02 (Running | 41.86.234.3 | Memory | Network I/O)        |
-|    - container-03 (Running | 41.86.234.4 | Memory | Network I/O)        |
+|    - container-01 (Running | 10.0.3.101 | Memory | Network I/O)         |
+|    - container-02 (Running | 10.0.3.102 | Memory | Network I/O)         |
+|    - container-03 (Running | 10.0.3.103 | Memory | Network I/O)         |
 +-------------------------------------------------------------------------+
 ```
 
@@ -58,7 +58,7 @@ This solution provides:
 | :--- | :--- | :--- | :--- |
 | `lxd.discovery` | LLD rule discovering all LXD containers | JSON Array | 1m |
 | `lxd.container.status[{#LXC.NAME}]` | Operational state (`Running`, `Stopped`, `Frozen`) | Character | 1m |
-| `lxd.container.ipv4[{#LXC.NAME},eth0]` | Primary global IPv4 address assigned to container | Character | 5m |
+| `lxd.container.ipv4[{#LXC.NAME},eth0]` | Primary IPv4 address assigned to container | Character | 5m |
 | `lxd.container.memory.usage[{#LXC.NAME}]` | Current memory consumption (Bytes) | Numeric (unsigned) | 1m |
 | `lxd.container.memory.peak[{#LXC.NAME}]` | Peak memory recorded for container (Bytes) | Numeric (unsigned) | 5m |
 | `lxd.container.net.rx[{#LXC.NAME},eth0]` | Incoming network bandwidth (Bytes/sec, Rate) | Numeric (unsigned) | 1m |
@@ -100,7 +100,7 @@ sudo -u zabbix /etc/zabbix/scripts/lxd_monitor.py discover
 
 Expected output:
 ```json
-[{"{#LXC.NAME}": "container-01", "{#LXC.STATUS}": "Running", "{#LXC.IPV4}": "192.0.2.10"}]
+[{"{#LXC.NAME}": "container-01", "{#LXC.STATUS}": "Running", "{#LXC.IPV4}": "10.0.3.101"}]
 ```
 
 ### Step 3: Configure Zabbix Agent 2 UserParameters
@@ -144,16 +144,16 @@ From the Zabbix Server or Proxy, run `zabbix_get` against the LXD host IP:
 
 ```bash
 # Test Discovery
-zabbix_get -s <LXD_HOST_IP> -k "lxd.discovery"
+zabbix_get -s 10.0.3.1 -k "lxd.discovery"
 
 # Test Container State
-zabbix_get -s <LXD_HOST_IP> -k "lxd.container.status[container-name]"
+zabbix_get -s 10.0.3.1 -k "lxd.container.status[container-01]"
 
 # Test Memory Usage
-zabbix_get -s <LXD_HOST_IP> -k "lxd.container.memory.usage[container-name]"
+zabbix_get -s 10.0.3.1 -k "lxd.container.memory.usage[container-01]"
 
 # Test Container IPv4
-zabbix_get -s <LXD_HOST_IP> -k "lxd.container.ipv4[container-name,eth0]"
+zabbix_get -s 10.0.3.1 -k "lxd.container.ipv4[container-01,eth0]"
 ```
 
 ---
