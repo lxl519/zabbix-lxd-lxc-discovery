@@ -15,11 +15,13 @@ zabbix_export:
         Monitored Metrics per Container:
         - Container Lifecycle State (Running, Stopped, Frozen)
         - Global IPv4 Network Address
-        - Memory Usage, Peak, and Swap
+        - Memory Usage, Peak (with Kernel < 5.19 fallback tracker), and Swap
         - Network Inbound / Outbound Bandwidth (Bytes per second)
         
-        Triggers:
-        - Alert when a container is not in 'Running' state.
+        Trigger Prototypes:
+        - Alert when a container is not in 'Running' state (High Severity).
+        - Alert when a running container has no IPv4 address on eth0 (Warning Severity).
+        - Alert when telemetry data is not received for 10 minutes (Warning Severity).
       groups:
         - name: Templates/Applications
         - name: Templates/Virtualization
@@ -46,9 +48,20 @@ zabbix_export:
               trigger_prototypes:
                 - uuid: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
                   expression: 'last(/Template App LXD LXC Containers by Zabbix agent 2/lxd.container.status[{#LXC.NAME}])<>"Running"'
-                  name: 'LXC: Container [{#LXC.NAME}] is not in Running state (State: {ITEM.VALUE})'
-                  priority: AVERAGE
+                  name: 'LXC: Container [{#LXC.NAME}] is not running (state: {ITEM.VALUE})'
+                  priority: HIGH
                   description: 'The LXC container {#LXC.NAME} is not currently running.'
+                  tags:
+                    - tag: component
+                      value: lxc
+                    - tag: container
+                      value: '{#LXC.NAME}'
+                - uuid: c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8
+                  expression: 'nodata(/Template App LXD LXC Containers by Zabbix agent 2/lxd.container.status[{#LXC.NAME}],10m)=1'
+                  name: 'LXC: Container [{#LXC.NAME}] data is not received for 10m'
+                  priority: WARNING
+                  manual_close: 'YES'
+                  description: 'No telemetry or status updates received for container {#LXC.NAME} during the last 10 minutes.'
                   tags:
                     - tag: component
                       value: lxc
@@ -68,6 +81,17 @@ zabbix_export:
                   value: lxc
                 - tag: container
                   value: '{#LXC.NAME}'
+              trigger_prototypes:
+                - uuid: b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7
+                  expression: 'last(/Template App LXD LXC Containers by Zabbix agent 2/lxd.container.status[{#LXC.NAME}])="Running" and last(/Template App LXD LXC Containers by Zabbix agent 2/lxd.container.ipv4[{#LXC.NAME},eth0])="N/A"'
+                  name: 'LXC: Container [{#LXC.NAME}] has no IPv4 address on eth0'
+                  priority: WARNING
+                  description: 'The container {#LXC.NAME} is running but failed to acquire or report an IPv4 address on interface eth0.'
+                  tags:
+                    - tag: component
+                      value: lxc
+                    - tag: container
+                      value: '{#LXC.NAME}'
 
             - uuid: f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8
               name: 'LXC: Container [{#LXC.NAME}] Memory Usage'
@@ -88,7 +112,7 @@ zabbix_export:
               delay: 5m
               history: 7d
               units: B
-              description: 'Peak memory recorded for container {#LXC.NAME}.'
+              description: 'Peak memory recorded for container {#LXC.NAME}. Includes autonomous high-water mark persistence for cgroup v2 on Linux kernels < 5.19.'
               tags:
                 - tag: component
                   value: lxc
